@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚨 매운맛 난제 투표소 🚨</title>
+    <style>
+        /* 기본 배경은 다크모드이나, 깜빡임 효과를 위해 transition 설정 */
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            transition: background-color 0.1s ease; /* 깜빡이는 타격감을 위해 빠르게 전환 */
+        }
+
+        /* 버튼 클릭 시 바디에 붙을 배경색 클래스 */
+        body.flash-a { background-color: #1e3799; }
+        body.flash-b { background-color: #d35400; }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            text-align: center;
+            color: #ff4757;
+            text-shadow: 0 0 10px rgba(255, 71, 87, 0.5);
+        }
+
+        .subtitle {
+            color: #a4b0be;
+            margin-bottom: 40px;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+
+        .vs-container {
+            background-color: #1e1e1e;
+            border-radius: 20px;
+            padding: 30px;
+            width: 100%;
+            max-width: 600px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 1px solid #2f3542;
+            text-align: center;
+            transition: transform 0.1s ease;
+        }
+
+        /* 버튼 누를 때 컨테이너도 살짝 흔들리는 효과를 위한 클래스 */
+        .shake { animation: shakeEffect 0.2s ease-in-out; }
+        @keyframes shakeEffect {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+            100% { transform: translateX(0); }
+        }
+
+        .question {
+            font-size: 1.4rem;
+            font-weight: bold;
+            margin-bottom: 30px;
+            word-break: keep-all;
+            line-height: 1.5;
+        }
+
+        .options {
+            display: flex;
+            gap: 20px;
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 25px 20px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            color: white;
+            z-index: 1;
+            word-break: keep-all;
+        }
+
+        .btn-left { background-color: #3742fa; }
+        .btn-right { background-color: #ffa502; }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(255,255,255,0.1);
+        }
+
+        .vs-badge {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #ffffff;
+            color: #121212;
+            font-weight: 900;
+            padding: 8px 12px;
+            border-radius: 50%;
+            font-size: 0.9rem;
+            z-index: 10;
+            border: 3px solid #1e1e1e;
+        }
+
+        .result-container {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .gauge-bar {
+            width: 100%;
+            height: 30px;
+            background-color: #2f3542;
+            border-radius: 15px;
+            overflow: hidden;
+            display: flex;
+        }
+
+        .gauge-left {
+            width: 0%;
+            height: 100%;
+            background-color: #3742fa;
+            transition: width 0.8s cubic-bezier(0.1, 0.8, 0.3, 1);
+        }
+
+        .gauge-right {
+            width: 0%;
+            height: 100%;
+            background-color: #ffa502;
+            transition: width 0.8s cubic-bezier(0.1, 0.8, 0.3, 1);
+        }
+
+        .percentage-text {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .next-btn {
+            margin-top: 30px;
+            padding: 12px 30px;
+            background-color: #2ed573;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: none;
+            transition: background 0.2s;
+        }
+
+        .next-btn:hover { background-color: #26af5f; }
+    </style>
+</head>
+<body>
+
+    <h1>🚨 프로 과몰입러 전용 투표소 🚨</h1>
+    <p class="subtitle">매운맛 밸런스 게임 가보자고!!</p>
+
+    <div class="vs-container" id="cardContainer">
+        <div class="question" id="questionText">질문 불러오는 중...</div>
+        
+        <div class="options">
+            <button class="btn btn-left" id="btnA" onclick="vote('A')">선택 A</button>
+            <div class="vs-badge">VS</div>
+            <button class="btn btn-right" id="btnB" onclick="vote('B')">선택 B</button>
+        </div>
+
+        <div class="result-container" id="resultContainer">
+            <div class="gauge-bar">
+                <div class="gauge-left" id="gaugeA"></div>
+                <div class="gauge-right" id="gaugeB"></div>
+            </div>
+            <div class="percentage-text">
+                <span id="percentA" style="color: #3742fa;">0%</span>
+                <span id="percentB" style="color: #ffa502;">0%</span>
+            </div>
+        </div>
+
+        <button class="next-btn" id="nextBtn" onclick="nextQuestion()">다음 난제 도전하기 ➡️</button>
+    </div>
+
+    <script>
+        // 요청하신 매운맛 난제 리스트
+        const debates = [
+            {
+                q: "내 애인이 내 절친에게 줄 수 있는 허용 범위는?",
+                a: "깻잎 떼어주기 (밑반찬 잡아주기)",
+                b: "새우 까주기 (껍질 벗겨서 앞접시에 주기)"
+            },
+            {
+                q: "더 용서할 수 없는 애인의 행동은?",
+                a: "내 절친이랑 단둘이 카톡방에서 일상 대화하기",
+                b: "내 절친이랑 단둘이 코인노래방 가기"
+            },
+            {
+                q: "초능력을 얻는 대신 치러야 할 대가는?",
+                a: "말할 때마다 무조건 랩으로만 말하기 (요 가라사대)",
+                b: "걸을 때마다 무조건 문워크로만 걷기"
+            },
+            {
+                q: "평생 둘 중 하나의 상태로만 살아야 한다면?",
+                a: "패딩 입고 에어컨 틀고 살기",
+                b: "반팔 입고 보일러 틀고 살기"
+            },
+            {
+                q: "친구가 사주는 밥, 더 참을 수 없는 상황은?",
+                a: "밥 사준대놓고 계산할 때 카드 두고 왔다고 하기",
+                b: "밥 사주면서 먹는 내내 생색내고 잔소리하기"
+            },
+            {
+                q: "당신의 인생을 바꿀 일생일대의 선택",
+                a: "숨만 쉬어도 매일 10만 원 입금, 단 스마트폰 평생 금지",
+                b: "그냥 지금처럼 스마트폰 하면서 평범하게 살기"
+            }
+        ];
+
+        let currentIndex = 0;
+
+        // 브라우저 내장 오디오로 효과음 만들기 (파일 필요 없음)
+        function playSound(type) {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            
+            if (type === 'success') {
+                // 딩동댕~ 산뜻한 사운드
+                const now = ctx.currentTime;
+                const freqs = [523.25, 659.25, 783.99]; // 도, 미, 솔
+                freqs.forEach((f, i) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(f, now + i * 0.1);
+                    gain.gain.setValueAtTime(0.1, now + i * 0.1);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.1 + 0.3);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now + i * 0.1);
+                    osc.stop(now + i * 0.1 + 0.3);
+                });
+            } else if (type === 'fail') {
+                // 쿵~ 우우우~ 킹받는 저음 야유 사운드
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(80, ctx.currentTime + 0.4); // 음이 흘러내림
+                gain.gain.setValueAtTime(0.15, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.4);
+            }
+        }
+
+        function loadQuestion() {
+            const currentDebate = debates[currentIndex];
+            document.getElementById("questionText").innerText = currentDebate.q;
+            document.getElementById("btnA").innerText = currentDebate.a;
+            document.getElementById("btnB").innerText = currentDebate.b;
+
+            document.getElementById("resultContainer").style.display = "none";
+            document.getElementById("nextBtn").style.display = "none";
+            document.getElementById("btnA").disabled = false;
+            document.getElementById("btnB").disabled = false;
+            
+            // 배경색 원상복구
+            document.body.className = "";
+        }
+
+        function vote(choice) {
+            document.getElementById("btnA").disabled = true;
+            document.getElementById("btnB").disabled = true;
+
+            // 1. 타격감 연출: 누른 버튼에 따라 화면 깜빡임 + 진동 효과
+            const card = document.getElementById("cardContainer");
+            card.classList.add("shake");
+            setTimeout(() => card.classList.remove("shake"), 200);
+
+            if (choice === 'A') {
+                document.body.classList.add("flash-a");
+                playSound('success'); // A 누르면 딩동댕
+            } else {
+                document.body.classList.add("flash-b");
+                playSound('fail'); // B 누르면 킹받는 야유음
+            }
+
+            // 잠시 후 배경색을 살짝 어둡게 유지 (선택한 톤 피드백)
+            setTimeout(() => {
+                if (choice === 'A') {
+                    document.body.style.backgroundColor = "#16224f";
+                } else {
+                    document.body.style.backgroundColor = "#4a2306";
+                }
+            }, 100);
+
+            // 2. 황금 밸런스 투표율 생성
+            let rateA = Math.floor(Math.random() * 11) + 45; 
+            if (choice === 'A') rateA += 1;
+            let rateB = 100 - rateA;
+
+            // 3. 결과 렌더링
+            document.getElementById("resultContainer").style.display = "block";
+            
+            setTimeout(() => {
+                document.getElementById("gaugeA").style.width = rateA + "%";
+                document.getElementById("gaugeB").style.width = rateB + "%";
+                document.getElementById("percentA").innerText = `${rateA}%`;
+                document.getElementById("percentB").innerText = `${rateB}%`;
+            }, 50);
+
+            document.getElementById("nextBtn").style.display = "inline-block";
+        }
+
+        function nextQuestion() {
+            currentIndex++;
+            document.body.style.backgroundColor = "#121212"; // 배경색 초기화
+            
+            if (currentIndex < debates.length) {
+                document.getElementById("gaugeA").style.width = "0%";
+                document.getElementById("gaugeB").style.width = "0%";
+                loadQuestion();
+            } else {
+                document.getElementById("questionText").innerText = "🎉 모든 매운맛 난제를 통과하셨습니다! 밤새 토론하느라 고생하셨습니다.";
+                document.getElementById("btnA").style.display = "none";
+                document.getElementById("btnB").style.display = "none";
+                document.querySelector(".vs-badge").style.display = "none";
+                document.getElementById("resultContainer").style.display = "none";
+                document.getElementById("nextBtn").style.display = "none";
+            }
+        }
+
+        loadQuestion();
+    </script>
+</body>
+</html>
